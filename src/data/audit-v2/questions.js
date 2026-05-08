@@ -1,0 +1,22 @@
+export const questions = [
+  { id: 1, text: "¿Las áreas de trabajo están limpias y ordenadas?", options: ["Sí", "No", "N/A"] },
+  { id: 2, text: "¿El personal utiliza uniforme completo y limpio?", options: ["Sí", "No", "N/A"] },
+  { id: 3, text: "¿Se realiza lavado de manos correctamente?", options: ["Sí", "No", "N/A"] },
+  { id: 4, text: "¿Los utensilios están limpios y desinfectados?", options: ["Sí", "No", "N/A"] },
+  { id: 5, text: "¿Los alimentos están etiquetados correctamente?", options: ["Sí", "No", "N/A"] },
+  { id: 6, text: "¿La temperatura de refrigeración es adecuada?", options: ["Sí", "No", "N/A"] },
+  { id: 7, text: "¿Se evita la contaminación cruzada?", options: ["Sí", "No", "N/A"] },
+  { id: 8, text: "¿Los pisos están limpios y secos?", options: ["Sí", "No", "N/A"] },
+  { id: 9, text: "¿La basura se retira constantemente?", options: ["Sí", "No", "N/A"] },
+  { id: 10, text: "¿No hay presencia de plagas?", options: ["Sí", "No", "N/A"] },
+  { id: 11, text: "¿Las campanas de extracción están limpias?", options: ["Sí", "No", "N/A"] },
+  { id: 12, text: "¿Los extintores están vigentes y accesibles?", options: ["Sí", "No", "N/A"] },
+  { id: 13, text: "¿Las tablas de corte están identificadas por color?", options: ["Sí", "No", "N/A"] },
+  { id: 14, text: "¿Los alimentos cocidos se mantienen calientes correctamente?", options: ["Sí", "No", "N/A"] },
+  { id: 15, text: "¿Existe jabón antibacterial disponible?", options: ["Sí", "No", "N/A"] },
+  { id: 16, text: "¿Las cámaras frías están limpias?", options: ["Sí", "No", "N/A"] },
+  { id: 17, text: "¿Los hornos funcionan correctamente?", options: ["Sí", "No", "N/A"] },
+  { id: 18, text: "¿El personal evita usar joyería en cocina?", options: ["Sí", "No", "N/A"] },
+  { id: 19, text: "¿Existe bitácora de limpieza actualizada?", options: ["Sí", "No", "N/A"] },
+  { id: 20, text: "¿La operación general cumple con los estándares establecidos?", options: ["Sí", "No", "N/A"] }
+];
