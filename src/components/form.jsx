@@ -18,7 +18,7 @@ function Form() {
   if (!categoria) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <button onClick={() => navigate('/')} className="btn btn-primary">Volver al Inicio</button>
+        <button onClick={() => navigate('/')} className="btn btn-primary">Volver al Index</button>
       </div>
     );
   }
