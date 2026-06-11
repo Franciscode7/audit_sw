@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { questions as q1 } from '../data/audit-v1/questions';// Datos de ejemplo para la auditoría
 import { questions as q2 } from '../data/audit-v2/questions';// Datos de ejemplo para la auditoría
@@ -6,9 +6,15 @@ import { questions as q3 } from '../data/audit-v3/questions';// Datos de ejemplo
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from "react-router-dom";
 
+import { useAuditoria } from './context';
+
 function Form() {
 
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [commentText, setCommentText] = useState('');
+
+
   const navigate = useNavigate();
  // Importante: usamos [] para desestructurar el array
   const [searchParams] = useSearchParams();
@@ -33,6 +39,22 @@ function Form() {
 
   const totalQuestions = questions.length;
 
+  // Estado para almacenar los archivos indexados por el ID de la pregunta
+  const [uploadedFiles, setUploadedFiles] = useState({});
+
+  const handleFileChange = (questionId, event) => {
+  const file = event.target.files[0]; // Captura el primer archivo seleccionado
+  
+    if (file) {
+      setUploadedFiles(prevFiles => ({
+        ...prevFiles,
+        [questionId]: file // Guarda o actualiza el archivo para esta pregunta
+      }));
+    }
+  };
+
+
+
   const [answers, setAnswers] = useState({}); // <--- ESTA ES LA QUE TE FALTA
   // Cálculo de progreso para DaisyUI (valor de 0 a 100)
   const progressValue = ((currentStep + 1) / totalQuestions) * 100;
@@ -50,8 +72,65 @@ function Form() {
     }
   };
 
+  useEffect(() => {
+    setSelectedOption(null);
+    setCommentText('');
+  }, [currentStep]);
+
+  const handleNextStep = () => {
+    const questionId = questions[currentStep].id;
+
+    // Guardamos el paquete completo en el JSON de respuestas globales
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        respuesta: selectedOption,
+        comentario: commentText.trim() // Si está vacío, guarda ""
+      }
+    }));
+
+    // Avanzamos de pregunta de forma segura
+    if (currentStep < totalQuestions - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+
+    console.log("Respuestas actuales:", {
+      ...answers,
+      [questionId]: {
+        respuesta: selectedOption,
+        comentario: commentText.trim()
+      }
+    });
+  };
+
+  useEffect(() => {
+      const fileData = Object.keys(uploadedFiles).map(id => ({
+        "ID Pregunta": id,
+        "Nombre del Archivo": uploadedFiles[id].name
+      }));
+
+      // Esto pintará una hermosa tabla en tu consola
+      console.table(fileData);
+    }, [uploadedFiles]);
+
+
+  const { setGlobalFiles } = useAuditoria();
+
+  const handleFinalizar = () => {
+    // 1. Guardamos los archivos pesados en el contexto
+    setGlobalFiles(uploadedFiles); 
+    
+    // 2. Navegamos pasando solo los textos en el JSON
+    // navigate(`/graficos?auditoria=${encodeURIComponent(categoria)}`, { 
+    //   state: { auditoria: finalJSON } 
+    // });
+  };
+
+
   const goTable = () => {
     // Aquí generamos el JSON final
+
+    setGlobalFiles(uploadedFiles);
     const finalJSON = {
       fecha: new Date().toISOString(),
       auditor: "PacoDev", // Podrías dinamizar esto luego
@@ -60,9 +139,10 @@ function Form() {
     };
 
     navigate(`/reportes?auditoria=${encodeURIComponent(categoria)}`, { state: { auditoria: finalJSON } });
+    console.log("Navegando a tabla con datos:", finalJSON);
   };
 
-    const goGraph = () => {
+  const goGraph = () => {
     // Aquí generamos el JSON final
     const finalJSON = {
       fecha: new Date().toISOString(),
@@ -73,6 +153,36 @@ function Form() {
 
     navigate(`/graficos?auditoria=${encodeURIComponent(categoria)}`, { state: { auditoria: finalJSON } });
   };
+
+   const goTest = () => {
+    setGlobalFiles(uploadedFiles);
+
+    // Aquí generamos el JSON final
+    const finalJSON = {
+      fecha: new Date().toISOString(),
+      auditor: "PacoDev", // Podrías dinamizar esto luego
+      respuestas: answers,
+      completado: Object.keys(answers).length === totalQuestions
+    };
+
+    navigate(`/test?auditoria=${encodeURIComponent(categoria)}`, { state: { auditoria: finalJSON } });
+  };
+
+  // useEffect(() => {
+  //   console.log("📂 Estado actual de archivos por pregunta:", uploadedFiles["name"]);
+  // }, [uploadedFiles]);
+
+  // useEffect(() => {
+  //   // Extraemos solo los nombres de los archivos guardados
+  //   const fileNames = Object.keys(uploadedFiles).map(id => ({
+  //     preguntaId: id,
+  //     nombreArchivo: uploadedFiles[id].name
+  //   }));
+
+  //   console.log("📂 Lista de archivos guardados:", fileNames.map(f => f.nombreArchivo, f => f.preguntaId));
+  // }, [uploadedFiles]);
+
+    
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col items-center p-4">
@@ -92,6 +202,11 @@ function Form() {
 
       {/* CONTENEDOR PRINCIPAL (MOBILE FIRST) */}
       <main className="w-full max-w-md flex-grow flex items-start">
+
+      {/* 1. OPCIONES DE BOTONES (REQUERIDO) */}
+      
+       
+
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -110,15 +225,60 @@ function Form() {
                 {questions[currentStep].options.map((option, index) => (
                   <button
                     key={index}
-                    onClick={() => handleAnswer(option)}
-                    className="btn btn-outline btn-primary btn-lg justify-start font-medium normal-case"
+                    onClick={() => setSelectedOption(option)} 
+                    className={`btn btn-lg justify-start font-medium normal-case ${
+                      selectedOption === option ? 'btn-success' : 'bg-gray-200'
+                    }`}
                   >
-                    <span className="bg-primary text-primary-content rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">
+                    <span className={`rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 ${
+                      selectedOption === option ? 'bg-primary-content text-primary' : 'bg-neutral text-neutral-content'
+                    }`}>
                       {String.fromCharCode(65 + index)}
                     </span>
                     {option}
                   </button>
                 ))}
+
+                <textarea 
+                  className="textarea textarea-bordered w-full" 
+                  id="feedback" 
+                  name="feedback" 
+                  rows="3" 
+                  placeholder="Escribe aquí tus comentarios si lo deseas..."
+                  value={commentText} 
+                  onChange={(e) => setCommentText(e.target.value)} 
+                />
+
+                {/* 3. Input File dinámico por ID de pregunta */}
+                <div className="form-control w-full mt-4">
+                  <label className="label">
+                    <span className="label-text">Adjuntar imagen para esta pregunta:</span>
+                  </label>
+                  <input 
+                    type="file" 
+                    // Forzamos el renderizado del input al cambiar de pregunta o archivo para refrescar la interfaz visual
+                    key={`${questions[currentStep].id}-${uploadedFiles[questions[currentStep].id]?.name || 'empty'}`}
+                    className="file-input file-input-bordered w-full" 
+                    accept="image/*" // Opcional: para limitar solo a imágenes
+                    onChange={(e) => handleFileChange(questions[currentStep].id, e)}
+                  />
+                  
+                  {/* Opcional: Mostrar feedback visual si ya hay un archivo cargado */}
+                  {uploadedFiles[questions[currentStep].id] && (
+                    <p className="text-sm text-success mt-1">
+                      Archivo cargado: <strong>{uploadedFiles[questions[currentStep].id].name}</strong>
+                    </p>
+                  )}
+                </div>
+
+                 <button
+                  onClick={handleNextStep}
+                  // Súper importante: se queda deshabilitado hasta que elijan una opción
+                  className="btn btn-primary mt-3 self-end px-8"
+                >
+                  Siguiente Pregunta
+                </button>
+
               </div>
 
               {/* Botón para retroceder si no es la primera pregunta */}
@@ -133,7 +293,7 @@ function Form() {
                 </div>
               )}
             </div>
-
+      
             {/* Dentro del main, después del bloque de opciones */}
         <div className="card-actions justify-between mt-8">
           {currentStep > 0 && (
@@ -162,6 +322,15 @@ function Form() {
               Ver grafico
             </button>
           ) : null}
+
+          {currentStep === totalQuestions - 1 ? (
+            <button 
+              onClick={goTest}
+              className="btn bg-orange-500 text-white grow"
+            >
+              Ver test
+            </button>
+          ) : null}
         </div>
           </motion.div>
         </AnimatePresence>
@@ -170,7 +339,7 @@ function Form() {
       <footer className="py-6 text-base-content/30 text-xs">
         Auditoria SW v1.0
       </footer>
-    </div>
+   </div>
   );
 }
 

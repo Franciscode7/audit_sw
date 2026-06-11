@@ -6,10 +6,16 @@ import { questions as q3 } from '../data/audit-v3/questions';// Datos de ejemplo
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 
+import { useAuditoria } from './context';
+
 function Reports() {
   const location = useLocation();
   const navigate = useNavigate();
   const reportRef = useRef();
+
+  const { globalFiles } = useAuditoria();
+  console.log("🔍 Contenido inicial de globalFiles en Test.jsx:", globalFiles);
+  const fileIds = Object.keys(globalFiles);
 
   const downloadPDF = () => {
     const element = reportRef.current;
@@ -71,7 +77,8 @@ function Reports() {
   // Extraemos el JSON del estado de la navegación
   const auditData = location.state?.auditoria;
 
-
+  
+  
 
    if (!auditData) {
     return (
@@ -133,25 +140,72 @@ function Reports() {
           <thead>
             <tr className="bg-gray-100 border-b border-gray-300">
               <th className="px-4 py-3 text-sm font-bold text-gray-700 w-16">ID</th>
-              <th className="px-4 py-3 text-sm font-bold text-gray-700">Pregunta</th>
-              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-32 text-center">Respuesta</th>
+              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-32 text-center">Pregunta</th>
+              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-8 text-center">Respuesta</th>
+              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-32 text-center">Comentario</th>
+              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-32 text-center">Foto</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {questions.map((q) => (
+              
               <tr key={q.id}>
                 <td className="px-4 py-3 text-sm text-gray-600">{q.id}</td>
-                <td className="px-4 py-3 text-sm text-gray-800 font-medium">{q.text}</td>
+                <td className="px-4 py-3 text-sm text-gray-800 text-center font-medium">{q.text}</td>
+
                 <td className="px-4 py-3 text-sm text-center">
-                  <span className={`font-bold px-2 py-1 rounded ${
-                    auditData.respuestas[q.id] === 'Sí' 
+                    {/* <span className="text">{auditData.respuestas[q.id]?.respuesta}</span> */}
+                  <span 
+                  className={`font-bold px-2 py-1 rounded ${
+                    auditData.respuestas[q.id]?.respuesta === 'Sí'
                     ? 'text-green-700' 
                     : 'text-red-700'
                   }`}>
-                    {auditData.respuestas[q.id] || "N/R"}
+                    {auditData.respuestas[q.id]?.respuesta}
                   </span>
                 </td>
-              </tr>
+
+                <td className="px-4 py-3 text-sm text-center">
+                  {/* Entramos a .comentario para pintar el texto del textarea */}
+                  <span className="font-bold px-2 py-1 rounded">{auditData.respuestas[q.id]?.comentario || "Sin comentario"}</span>
+                </td>
+
+                {/* <td className="px-4 py-3 text-sm text-center">
+                  
+                  {fileIds.map((id) => {
+                    const file = globalFiles[id];
+                    // Creamos la URL temporal para la etiqueta <img>
+
+                    const imagenUrl = URL.createObjectURL(file);
+
+                    return (
+                      <img 
+                        src={imagenUrl} 
+                        alt={`Evidencia ${id}`} 
+                        // Revocamos la URL de memoria cuando la imagen se desmonte para evitar fugas de memoria
+                        // onLoad={() => URL.revokeObjectURL(imagenUrl)}
+                      />
+                    );
+                  })}
+                 
+                </td> */}
+
+                <td className="px-4 py-3 text-sm text-center">
+                  {globalFiles[q.id] ? (
+                    <div className="flex justify-center">
+                      <img 
+                        src={URL.createObjectURL(globalFiles[q.id])} 
+                        alt={`Evidencia ${q.id}`} 
+                        className="w-16 h-16 object-cover rounded shadow-sm border border-gray-200"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic text-xs">Sin imagen</span>
+                  )}
+                </td>
+
+
+              </tr> 
             ))}
           </tbody>
         </table>

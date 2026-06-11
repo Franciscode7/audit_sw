@@ -31,12 +31,17 @@ function Graphics() {
     );
   }
 
+  const respuestas7 = Object.values(auditData.respuestas);
+
+  // Extrae y aplana todos los arreglos 'respuesta' en uno solo
+  const todasLasRespuestas = respuestas7.flatMap(item => item.respuesta);
+
   // Procesar datos para las gráficas
-  const respuestasArray = Object.values(auditData.respuestas);
+  const todaslasRespuestas = Object.values(auditData.respuestas);
   const counts = {
-    Cumple: respuestasArray.filter(r => r === 'Sí' || r === 'Cumple').length,
-    NoCumple: respuestasArray.filter(r => r === 'No' || r === 'No Cumple').length,
-    NA: respuestasArray.filter(r => r === 'N/A').length
+    Cumple: todasLasRespuestas.filter(r => r === 'Sí' || r === 'Cumple').length,
+    NoCumple: todasLasRespuestas.filter(r => r === 'No' || r === 'No Cumple').length,
+    NA: todasLasRespuestas.filter(r => r === 'N/A').length
   };
 
   const data = [
