@@ -260,6 +260,7 @@ function Form() {
                     key={`${questions[currentStep].id}-${uploadedFiles[questions[currentStep].id]?.name || 'empty'}`}
                     className="file-input file-input-bordered w-full" 
                     accept="image/*" // Opcional: para limitar solo a imágenes
+                   
                     onChange={(e) => handleFileChange(questions[currentStep].id, e)}
                   />
                   

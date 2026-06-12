@@ -165,7 +165,7 @@ function Reports() {
                   </span>
                 </td>
 
-                <td className="px-4 py-3 text-sm text-center">
+                <td className="px-8 py-6 text-sm text-center">
                   {/* Entramos a .comentario para pintar el texto del textarea */}
                   <span className="font-bold px-2 py-1 rounded">{auditData.respuestas[q.id]?.comentario || "Sin comentario"}</span>
                 </td>
@@ -196,7 +196,7 @@ function Reports() {
                       <img 
                         src={URL.createObjectURL(globalFiles[q.id])} 
                         alt={`Evidencia ${q.id}`} 
-                        className="w-16 h-16 object-cover rounded shadow-sm border border-gray-200"
+                        className="w-30 h-30 object-cover rounded shadow-sm border-gray-200"
                       />
                     </div>
                   ) : (
