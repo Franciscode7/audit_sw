@@ -15,6 +15,8 @@ function Reports() {
   console.log("🔍 Contenido inicial de globalFiles en Test.jsx:", globalFiles);
   const fileIds = Object.keys(globalFiles);
 
+  const [auditorName, setAuditorName] = useState("");
+
   // const downloadPDF = () => {
   //   const element = reportRef.current;
 
@@ -60,17 +62,24 @@ function Reports() {
   // };
 
   const handleDownload = () => {
-    const auditorName = prompt("Por favor, ingresa el nombre del auditor para el reporte:");
+    const nombreIngresado = prompt("Por favor, ingresa el nombre del auditor para el reporte:");
 
-    // 2. Si el usuario le dio a "Cancelar" o dejó el campo completamente vacío, frenamos la descarga
-    if (auditorName=== null || auditorName.trim() === "") {
-      // Opcional: puedes mandar un alert normal avisando que se canceló
+    // Si el usuario cancela o deja vacío, frenamos todo
+    if (nombreIngresado === null || nombreIngresado.trim() === "") {
       alert("Descarga cancelada: El nombre del auditor es obligatorio.");
       return; 
     }
 
-    downloadPDF(reportRef.current, auditData, 'respuestas', auditorName);
-  };
+    const nombreLimpio = nombreIngresado.trim();
+
+    // 1. Actualizamos el estado de React (esto cambia el <h1> en la pantalla)
+    setAuditorName(nombreLimpio);
+
+    setTimeout(() => {
+      // Cuando este código se ejecute, el <h1> ya tendrá el nombre nuevo en el DOM
+      downloadPDF(reportRef.current, auditData, 'respuestas', nombreLimpio);
+    }, 150); // 150 milisegundos son imperceptibles para el usuario, pero eternos para el navegador
+    };
   
   const [searchParams] = useSearchParams();
   // .get() es un método estándar de la interfaz URLSearchParams
@@ -169,8 +178,8 @@ function Reports() {
 
       <div ref={reportRef} className="bg-white p-10 text-black border border-gray-200">
       {/* Encabezado */}
-      <h1 className="text-2xl text-gray-900 font-extrabold mb-6 pb-2 border-b-2 border-gray-800">
-        Reporte de Auditoría: {auditData.auditor}
+      <h1 className="text-2xl text-[#000000] font-bold mb-6 pb-2 text-left border-b-2 border-gray-800">
+        Reporte elaborado por: <p className='text-[#4682B4] inline'>{auditorName || "unmade"}</p>
       </h1>
 
       {/* Tabla construida con Tailwind puro */}
