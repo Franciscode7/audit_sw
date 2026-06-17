@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { questions as Q1 } from "../data/audit-v1/questions";
-import { questions as Q2 } from "../data/audit-v2/questions";
+import { Q1, Q2, Q3 } from "../data/restaurante_q/questions";
 import { useState } from "react";
 // import { questions as Q3 } from "../data/audit-v3/questions";
 // import { questions as Q4 } from "../data/audit-v4/questions";
@@ -8,38 +7,6 @@ import { useState } from "react";
 function Index() {
   const navigate = useNavigate();
   const [categoria, setCategoria] = useState("");
-
-  // console.log(Q1[0].options[0]);
-
-  // return (
-  //   <form
-  //     onSubmit={(e) => {
-  //       e.preventDefault();
-  //       const categoria = e.target.categoria.value;
-
-  //       if (categoria) {
-  //         navigate(`formulario?categoria=${categoria}`);
-  //       }
-  //     }}
-  //     className="pt-8"
-  //   >
-  //     <select name="categoria" defaultValue="">
-  //       <option value="" disabled>
-  //         -- Selecciona --
-  //       </option>
-
-  //       <option value="AuditV1">Auditoria V1</option>
-  //       <option value="AuditV2">Auditoria V2</option>
-  //       <option value="AuditV3">Auditoria V3</option>
-  //     </select>
-
-  //     <input type="submit" value="Empezar" />
-  //   </form>
-  // );
-
-
-
-// ... dentro de tu componente:
 
 const handleEmpezar = () => {
   if (categoria) {
@@ -55,7 +22,7 @@ return (
         {/* Encabezado */}
         <div className="text-center">
           <h2 className="card-title text-2xl font-bold justify-center text-blue-500 gap-2">
-            Nueva Auditoría
+            Auditoría
           </h2>
           <p className="text-sm text-base-content/70 mt-1">
             Selecciona una categoría para empezar.

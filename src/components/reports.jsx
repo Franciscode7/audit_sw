@@ -1,10 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { questions as q1 } from '../data/audit-v1/questions';// Datos de ejemplo para la auditoría
-import { questions as q2 } from '../data/audit-v2/questions';// Datos de ejemplo para la auditoría
-import { questions as q3 } from '../data/audit-v3/questions';// Datos de ejemplo para la auditoría
+import { Q1, Q2, Q3} from '../data/restaurante_q/questions';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import html2pdf from 'html2pdf.js';
+import { downloadPDF } from '../utils/functions';
 
 import { useAuditoria } from './context';
 
@@ -17,59 +15,71 @@ function Reports() {
   console.log("🔍 Contenido inicial de globalFiles en Test.jsx:", globalFiles);
   const fileIds = Object.keys(globalFiles);
 
-  const downloadPDF = () => {
-    const element = reportRef.current;
-
-    // 1. Clonamos el elemento para no afectar la vista del usuario
-    const clonedElement = element.cloneNode(true);
-    
-    // 2. Quitamos todas las clases de DaisyUI que causan conflicto (opcional pero seguro)
-    // O mejor, forzamos que todos los colores sean RGB/HEX en el clon
-    clonedElement.style.color = 'black';
-    clonedElement.style.backgroundColor = 'white';
-    
-    // Buscamos todos los elementos dentro del clon y forzamos el color
-    const allElements = clonedElement.querySelectorAll('*');
-    allElements.forEach(el => {
-      // Si el elemento tiene clases de DaisyUI, forzamos colores seguros
-      if (el.classList.contains('badge') || el.classList.contains('btn')) {
-        el.style.backgroundColor = '#eeeeee'; // Gris claro estándar
-        el.style.color = '#000000';
-        el.style.borderColor = '#cccccc';
-      }
-    });
-
-    const opt = {
-      margin: 10,
-      filename: `Auditoria de ${auditData.auditor}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true,
-        // Importante: No dejar que oklch se cuele
-        onclone: (document) => {
-          // Aquí podrías manipular el DOM clonado antes de la captura
-        }
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    // Ejecutar la conversión
-    html2pdf().set(opt).from(clonedElement).save();
-  };
-
   // const downloadPDF = () => {
-  //   window.print();
+  //   const element = reportRef.current;
+
+  //   // 1. Clonamos el elemento para no afectar la vista del usuario
+  //   const clonedElement = element.cloneNode(true);
+    
+  //   // 2. Quitamos todas las clases de DaisyUI que causan conflicto (opcional pero seguro)
+  //   // O mejor, forzamos que todos los colores sean RGB/HEX en el clon
+  //   clonedElement.style.color = 'black';
+  //   clonedElement.style.backgroundColor = 'white';
+    
+  //   // Buscamos todos los elementos dentro del clon y forzamos el color
+  //   const allElements = clonedElement.querySelectorAll('*');
+  //   allElements.forEach(el => {
+  //     // Si el elemento tiene clases de DaisyUI, forzamos colores seguros
+  //     if (el.classList.contains('badge') || el.classList.contains('btn')) {
+  //       el.style.backgroundColor = '#eeeeee'; // Gris claro estándar
+  //       el.style.color = '#000000';
+  //       el.style.borderColor = '#cccccc';
+  //     }
+  //   });
+
+  //   const opt = {
+  //     margin: 10,
+  //     filename: `Auditoria de ${auditData.auditor}.pdf`,
+  //     image: { type: 'jpeg', quality: 1 },
+  //     html2canvas: { 
+  //       scale: 4, 
+  //       useCORS: true,
+  //       logging: false,
+  //       imageTimeout: 0,
+  //       state: 'ready',
+  //       // Importante: No dejar que oklch se cuele
+  //       onclone: (document) => {
+  //         // Aquí podrías manipular el DOM clonado antes de la captura
+  //       }
+  //     },
+  //     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  //   };
+
+  //   // Ejecutar la conversión
+  //   html2pdf().set(opt).from(clonedElement).save();
   // };
 
+  const handleDownload = () => {
+    const auditorName = prompt("Por favor, ingresa el nombre del auditor para el reporte:");
+
+    // 2. Si el usuario le dio a "Cancelar" o dejó el campo completamente vacío, frenamos la descarga
+    if (auditorName=== null || auditorName.trim() === "") {
+      // Opcional: puedes mandar un alert normal avisando que se canceló
+      alert("Descarga cancelada: El nombre del auditor es obligatorio.");
+      return; 
+    }
+
+    downloadPDF(reportRef.current, auditData, 'respuestas', auditorName);
+  };
+  
   const [searchParams] = useSearchParams();
   // .get() es un método estándar de la interfaz URLSearchParams
   const auditoria = searchParams.get("auditoria");
 
   const questionsMap = {
-    "AuditV1": q1, // Aquí podrías importar otro set de preguntas para V2, V3, etc.
-    "AuditV2": q2, // Reemplaza con el nuevo set de preguntas
-    "AuditV3": q3, // Reemplaza con el nuevo set de preguntas
+    "AuditV1": Q1, // Aquí podrías importar otro set de preguntas para V2, V3, etc.
+    "AuditV2": Q2, // Reemplaza con el nuevo set de preguntas
+    "AuditV3": Q3, // Reemplaza con el nuevo set de preguntas
   };
 
   const questions = questionsMap[auditoria]; 
@@ -89,19 +99,48 @@ function Reports() {
   }
 
   return (
-    <div>
-        <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Análisis Estadístico</h1>
+    <div className='mx-6'>
+
+      <div className="fixed inset-0 bg-[#111111] text-[#ffffff] z-[9999] flex flex-col items-center justify-center p-6 text-center landscape:hidden">
+      <div className="animate-bounce text-4xl mb-4">🔄</div>
+      <h2 className="text-xl font-bold mb-2">Por favor, gira tu dispositivo</h2>
+      <p className="text-sm opacity-80 text-gray-300">
+        Este reporte contiene gráficas detalladas y requiere una vista horizontal para visualizarse de forma óptima.
+      </p>
+    </div> 
+
+      <div className="flex flex-col gap-4 mb-0 w-full">
+        {/* FILA SUPERIOR: Título y Botones de Navegación */}
+        <div className="flex flex-col md:flex-row md:justify-between mt-4 mx-2 md:items-center gap-4">
+
+          {/* Contenedor para Home y Ver Gráfica (repartidos al 50% cada uno) */}
+          <div className="flex flex-1 w-full md:max-w-md gap-2">
             <button 
-            onClick={() => navigate(`/graficos?auditoria=${encodeURIComponent(auditoria)}`, { state: { auditoria: auditData } })}
-            className="btn btn-outline btn-sm"
+              onClick={() => navigate(`/`)}
+              className="btn btn-outline btn-md flex-1"
             >
-            Ver Grafica
+              Home
             </button>
-            <button onClick={downloadPDF} className="btn btn-primary shadow-lg">
-            Descargar PDF
-          </button>
-        </div>
+            
+            <button 
+              onClick={() => navigate(`/graficos?auditoria=${encodeURIComponent(auditoria)}`, { state: { auditoria: auditData } })}
+              className="btn btn-outline btn-md flex-1"
+            >
+              Ver Grafica
+      </button>
+    </div>
+      </div>
+
+      {/* FILA INFERIOR: Botón de Descarga Centrado */}
+      <div className="flex justify-center mx-2 mb-4 w-full">
+        <button 
+          onClick={handleDownload} 
+          className="btn btn-primary shadow-lg btn-md w-40 sm:w-auto sm:px-12"
+        >
+          Descargar PDF
+        </button>
+      </div>
+      </div>
 
 
       {/* <div ref={reportRef} className="light" className="bg-white p-8 text-black" style={{ colorScheme: 'light' }}>
@@ -159,6 +198,8 @@ function Reports() {
                   className={`font-bold px-2 py-1 rounded ${
                     auditData.respuestas[q.id]?.respuesta === 'Sí'
                     ? 'text-green-700' 
+                    : auditData.respuestas[q.id]?.respuesta === 'Parcialmente'
+                    ? 'text-yellow-500' 
                     : 'text-red-700'
                   }`}>
                     {auditData.respuestas[q.id]?.respuesta}
@@ -191,13 +232,28 @@ function Reports() {
                 </td> */}
 
                 <td className="px-4 py-3 text-sm text-center">
-                  {globalFiles[q.id] ? (
+                  {/* {globalFiles[q.id] ? (
                     <div className="flex justify-center">
                       <img 
                         src={URL.createObjectURL(globalFiles[q.id])} 
                         alt={`Evidencia ${q.id}`} 
                         className="w-30 h-30 object-cover rounded shadow-sm border-gray-200"
                       />
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic text-xs">Sin imagen</span>
+                  )} */}
+                  {globalFiles[q.id] && globalFiles[q.id].length > 0 ? (
+  /* Contenedor tipo grid o flex para alinear múltiples imágenes */
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {globalFiles[q.id].map((file, index) => (
+                        <img 
+                          key={`${q.id}-img-${index}`}
+                          src={URL.createObjectURL(file)} 
+                          alt={`Evidencia ${q.id} - Imagen ${index + 1}`} 
+                          className="w-30 h-30 object-cover rounded shadow-sm border border-gray-200" 
+                        />
+                      ))}
                     </div>
                   ) : (
                     <span className="text-gray-400 italic text-xs">Sin imagen</span>

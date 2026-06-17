@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { questions as q1 } from '../data/audit-v1/questions';// Datos de ejemplo para la auditoría
-import { questions as q2 } from '../data/audit-v2/questions';// Datos de ejemplo para la auditoría
-import { questions as q3 } from '../data/audit-v3/questions';// Datos de ejemplo para la auditoría
+import { Q1, Q2, Q3} from '../data/restaurante_q/questions';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from "react-router-dom";
+import heic2any from "heic2any";
 
 import { useAuditoria } from './context';
 
@@ -30,9 +29,9 @@ function Form() {
   }
 
   const questionsMap = {
-    "AuditV1": q1, // Aquí podrías importar otro set de preguntas para V2, V3, etc.
-    "AuditV2": q2, // Reemplaza con el nuevo set de preguntas
-    "AuditV3": q3, // Reemplaza con el nuevo set de preguntas
+    "AuditV1": Q1, 
+    "AuditV2": Q2, 
+    "AuditV3": Q3, 
   };
 
   const questions = questionsMap[categoria]; // Fallback a V1
@@ -42,16 +41,65 @@ function Form() {
   // Estado para almacenar los archivos indexados por el ID de la pregunta
   const [uploadedFiles, setUploadedFiles] = useState({});
 
-  const handleFileChange = (questionId, event) => {
-  const file = event.target.files[0]; // Captura el primer archivo seleccionado
+
+
+
+
   
-    if (file) {
-      setUploadedFiles(prevFiles => ({
-        ...prevFiles,
-        [questionId]: file // Guarda o actualiza el archivo para esta pregunta
-      }));
+
+  const handleFileChange = async (questionId, event) => {
+  const filesSelected = Array.from(event.target.files);
+  if (filesSelected.length === 0) return;
+
+  const processedFiles = await Promise.all(
+    filesSelected.map(async (file) => {
+      // Verificamos si el archivo es HEIC por su tipo o extensión
+      if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+        try {
+          // Convertimos el HEIC a un Blob JPEG nativo
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.7 // ¡De paso lo comprimimos un poco para que no pese tanto!
+          });
+
+          // Retornamos el nuevo archivo con formato e información corregida
+          return new File(
+            [Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob], 
+            file.name.replace(/\.heic$/i, ".jpg"), 
+            { type: "image/jpeg" }
+          );
+        } catch (error) {
+          console.error("Error al convertir formato HEIC:", error);
+          return file; // Si falla, devolvemos el original por seguridad
+        }
+      }
+      return file; // Si ya es JPG/PNG, pasa directo sin tocarlo
+    })
+  );
+  
+    if (processedFiles.length > 0) {
+      // setUploadedFiles(prevFiles => ({
+      //   ...prevFiles,
+      //   [questionId]: processedFiles // Guarda o actualiza los archivos para esta pregunta
+      // }));
+      setUploadedFiles((prevFiles) => {
+        // Obtenemos los archivos que ya existían para esta pregunta (si no hay, empezamos con un array vacío)
+        const existingFiles = prevFiles[questionId] || [];
+        
+        return {
+          ...prevFiles,
+          // Sumamos los archivos anteriores con los recién procesados
+          [questionId]: [...existingFiles, ...processedFiles]
+        };
+      });
     }
   };
+
+
+
+
+
 
 
 
@@ -103,14 +151,34 @@ function Form() {
     });
   };
 
-  useEffect(() => {
-      const fileData = Object.keys(uploadedFiles).map(id => ({
-        "ID Pregunta": id,
-        "Nombre del Archivo": uploadedFiles[id].name
-      }));
+  // useEffect(() => {
+  //     const fileData = Object.keys(uploadedFiles).map(id => ({
+  //       "ID Pregunta": id,
+  //       "Nombre del Archivo": uploadedFiles[id].name
+  //     }));
 
-      // Esto pintará una hermosa tabla en tu consola
-      console.table(fileData);
+  //     // Esto pintará una hermosa tabla en tu consola
+  //     console.table(fileData);
+  //   }, [uploadedFiles]);
+
+  useEffect(() => {
+  // Usamos flatMap para aplanar el resultado, ya que una pregunta puede tener varios archivos
+  const fileData = Object.keys(uploadedFiles).flatMap(id => {
+    const filesArray = uploadedFiles[id] || [];
+        
+        // Mapeamos cada archivo individual de esta pregunta
+        return filesArray.map(file => ({
+          "ID Pregunta": id,
+          "Nombre del Archivo": file.name,
+          "Tamaño (KB)": (file.size / 1024).toFixed(2), // ¡Bonus! Esto viene genial para auditar
+          "Tipo": file.type
+        }));
+      });
+
+      // Si hay archivos, los pintamos en la hermosa tabla de la consola
+      if (fileData.length > 0) {
+        console.table(fileData);
+      }
     }, [uploadedFiles]);
 
 
@@ -119,11 +187,6 @@ function Form() {
   const handleFinalizar = () => {
     // 1. Guardamos los archivos pesados en el contexto
     setGlobalFiles(uploadedFiles); 
-    
-    // 2. Navegamos pasando solo los textos en el JSON
-    // navigate(`/graficos?auditoria=${encodeURIComponent(categoria)}`, { 
-    //   state: { auditoria: finalJSON } 
-    // });
   };
 
 
@@ -188,9 +251,10 @@ function Form() {
     <div className="min-h-screen bg-base-200 flex flex-col items-center p-4">
       
       {/* HEADER CON PROGRESO */}
-      <header className="w-full max-w-md mt-8 mb-12">
-        <div className="flex justify-between items-end mb-2 px-2">
-          <span className="text-xs font-bold text-primary">PASO {currentStep + 1} DE {totalQuestions}</span>
+      <div className="w-full max-w-md mt-0 mb-2">
+        <span className="text-lg font-bold text-primary text-center mb-0">Pregunta {currentStep + 1} de {totalQuestions}</span>
+        <div className="flex justify-between items-end text-center mb-0 px-2">
+          <span className="text-xs font-bold text-primary">0%</span>
           <span className="text-xs font-bold text-primary">{Math.round(progressValue)}%</span>
         </div>
         <progress 
@@ -198,7 +262,7 @@ function Form() {
           value={progressValue} 
           max="100"
         ></progress>
-      </header>
+      </div>
 
       {/* CONTENEDOR PRINCIPAL (MOBILE FIRST) */}
       <main className="w-full max-w-md flex-grow flex items-start">
@@ -217,30 +281,30 @@ function Form() {
             className="card w-full bg-base-100 shadow-xl border border-base-300"
           >
             <div className="card-body gap-6">
-              <h2 className="card-title text-xl text-gray-800 leading-tight">
+              <h2 className="card-title text-lg text-gray-800 leading-tight">
                 {questions[currentStep].text}
               </h2>
               
-              <div className="flex flex-col gap-3 mt-4">
+              <div className="flex flex-col gap-3 mt-0">
                 {questions[currentStep].options.map((option, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedOption(option)} 
-                    className={`btn btn-lg justify-start font-medium normal-case ${
-                      selectedOption === option ? 'btn-success' : 'bg-gray-200'
+                    className={`btn btn-lg text-center text-2xl font-medium  text-gray-800 normal-case ${
+                      selectedOption === option ? 'bg-blue-500 text-white' : 'bg-gray-200'
                     }`}
                   >
-                    <span className={`rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 ${
+                    {/* <span className={`rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 ${
                       selectedOption === option ? 'bg-primary-content text-primary' : 'bg-neutral text-neutral-content'
                     }`}>
                       {String.fromCharCode(65 + index)}
-                    </span>
+                    </span> */}
                     {option}
                   </button>
                 ))}
 
                 <textarea 
-                  className="textarea textarea-bordered w-full" 
+                  className="textarea textarea-bordered w-full text-black" 
                   id="feedback" 
                   name="feedback" 
                   rows="3" 
@@ -254,83 +318,119 @@ function Form() {
                   <label className="label">
                     <span className="label-text">Adjuntar imagen para esta pregunta:</span>
                   </label>
-                  <input 
-                    type="file" 
-                    // Forzamos el renderizado del input al cambiar de pregunta o archivo para refrescar la interfaz visual
-                    key={`${questions[currentStep].id}-${uploadedFiles[questions[currentStep].id]?.name || 'empty'}`}
-                    className="file-input file-input-bordered w-full" 
-                    accept="image/*" // Opcional: para limitar solo a imágenes
-                   
-                    onChange={(e) => handleFileChange(questions[currentStep].id, e)}
-                  />
-                  
-                  {/* Opcional: Mostrar feedback visual si ya hay un archivo cargado */}
-                  {uploadedFiles[questions[currentStep].id] && (
-                    <p className="text-sm text-success mt-1">
-                      Archivo cargado: <strong>{uploadedFiles[questions[currentStep].id].name}</strong>
-                    </p>
-                  )}
+                <div className="flex flex-col gap-4 w-full">
+  
+                  {/* 1. DISPARADORES (Fijos 50/50 en horizontal, uno abajo del otro en móviles) */}
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
+                    {/* Botón de Galería */}
+                    <label className="file-input file-input-bordered flex-1 flex items-center cursor-pointer bg-base-100 text-base-content border-gray-300 hover:bg-base-200 justify-center py-3 px-4 rounded-lg transition-colors border">
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        multiple
+                        key={`gallery-${questions[currentStep].id}-${uploadedFiles[questions[currentStep].id]?.length || 0}`}
+                        onChange={(e) => handleFileChange(questions[currentStep].id, e)}
+                      />
+                      <span className="font-medium flex items-center gap-2">
+                        📂 Seleccionar de Galería
+                      </span>
+                    </label>
+
+                    {/* Botón de Cámara */}
+                    <label className="file-input file-input-bordered flex-1 flex items-center cursor-pointer bg-base-100 text-base-content border-gray-300 hover:bg-base-200 justify-center py-3 px-4 rounded-lg transition-colors border">
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        capture="environment"
+                        key={`camera-${questions[currentStep].id}-${uploadedFiles[questions[currentStep].id]?.length || 0}`}
+                        onChange={(e) => handleFileChange(questions[currentStep].id, e)}
+                      />
+                      <span className="font-medium flex items-center gap-2">
+                        📸 Tomar Foto
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* 2. CONTENEDOR DE ESTADO VISUAL (Solo cambia abajo) */}
+                  <div className="w-full mt-1">
+                    {uploadedFiles[questions[currentStep].id]?.length > 0 ? (
+                      <div className="alert alert-success bg-green-100 border-green-300 text-green-800 flex flex-col items-start gap-2 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 w-full justify-between">
+                          <span className="font-semibold text-sm flex items-center gap-1.5">
+                            ✓ Evidencias listas:
+                          </span>
+                          <span className="badge badge-success text-white font-bold">
+                            {uploadedFiles[questions[currentStep].id].length} archivos
+                          </span>
+                        </div>
+                        
+                        {/* Pequeña lista de nombres para que el usuario sepa cuáles van */}
+                        <div className="text-xs opacity-90 max-h-20 overflow-y-auto w-full border-t border-green-200 pt-1.5 mt-0.5">
+                          {uploadedFiles[questions[currentStep].id].map((file, idx) => (
+                            <div key={idx} className="truncate">
+                              ✅ {file.name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Estado vacío estandarizado */
+                      <div className="border border-dashed border-gray-300 bg-gray-50 text-gray-400 text-center py-3 rounded-lg text-sm italic">
+                        Ningún archivo o foto capturada para esta pregunta.
+                      </div>
+                    )}
+                  </div>
+
                 </div>
 
-                 <button
-                  onClick={handleNextStep}
-                  // Súper importante: se queda deshabilitado hasta que elijan una opción
-                  className="btn btn-primary mt-3 self-end px-8"
-                >
-                  Siguiente Pregunta
-                </button>
+                </div>
+                  <div className="card-actions justify-center mt-0">
+                    <button
+                      onClick={handleNextStep}
+                      disabled={!selectedOption}
+                      // Súper importante: se queda deshabilitado hasta que elijan una opción
+                      className=" text-lg btn bg-blue-500 text-white mt-3 justify-center self-end px-8 hover:bg-white hover:text-blue-500 hover:border-blue-500"
+                    >
+                      Siguiente Pregunta
+                    </button>
+                </div>
 
               </div>
 
               {/* Botón para retroceder si no es la primera pregunta */}
               {currentStep > 0 && (
-                <div className="card-actions justify-center mt-6">
+                <div className="card-actions justify-center mt-0">
                   <button 
                     onClick={() => setCurrentStep(currentStep - 1)}
-                    className="btn btn-ghost btn-sm text-base-content/50"
+                    className="text-lg btn btn-ghost btn-sm text-base-content/50 hover:text-red-500"
                   >
                     Anterior
                   </button>
                 </div>
               )}
             </div>
-      
-            {/* Dentro del main, después del bloque de opciones */}
+
         <div className="card-actions justify-between mt-8">
-          {currentStep > 0 && (
-            <button 
-              onClick={() => setCurrentStep(currentStep - 1)}
-              className="btn btn-ghost"
-            >
-              Anterior
-            </button>
-          )}
-
+      
           {currentStep === totalQuestions - 1 ? (
-            <button 
-              onClick={goTable}
-              className="btn btn-success text-white grow"
-            >
-              Ver tabla
-            </button>
-          ) : null}
+           <div className="flex w-full gap-2">
+          <button 
+            onClick={goTable}
+            className="btn btn-success text-white flex-1"
+          >
+            Ver tabla
+          </button>
 
-          {currentStep === totalQuestions - 1 ? (
-            <button 
-              onClick={goGraph}
-              className="btn bg-orange-500 text-white grow"
-            >
-              Ver grafico
-            </button>
-          ) : null}
+          <button 
+            onClick={goGraph}
+            className="btn bg-orange-500 text-white flex-1"
+          >
+            Ver grafico
+          </button>
+        </div>
 
-          {currentStep === totalQuestions - 1 ? (
-            <button 
-              onClick={goTest}
-              className="btn bg-orange-500 text-white grow"
-            >
-              Ver test
-            </button>
           ) : null}
         </div>
           </motion.div>
@@ -338,8 +438,9 @@ function Form() {
       </main>
 
       <footer className="py-6 text-base-content/30 text-xs">
-        Auditoria SW v1.0
+        Auditoria SW v1.0 by <a href="https://github.com/Franciscode7/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">PacoDev</a>
       </footer>
+
    </div>
   );
 }
