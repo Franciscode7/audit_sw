@@ -1,32 +1,90 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Q1, Q2, Q3} from '../data/restaurante_q/questions';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from "react-router-dom";
 import heic2any from "heic2any";
+import { get, set } from 'idb-keyval';
+import { saveImagesToDB, db } from '../db/db';
 
 import { useAuditoria } from './context';
 
 function Form() {
 
-  const [currentStep, setCurrentStep] = useState(0);
+  // const [currentStep, setCurrentStep] = useState(0);
+
   const [selectedOption, setSelectedOption] = useState(null);
   const [commentText, setCommentText] = useState('');
 
+  // Al inicio de tu componente, junto a tus otros estados:
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
 
+  
   const navigate = useNavigate();
  // Importante: usamos [] para desestructurar el array
   const [searchParams] = useSearchParams();
   // .get() es un método estándar de la interfaz URLSearchParams
   const categoria = searchParams.get("categoria");
+  const auditoriaNombre = searchParams.get("nombre");
+  const paramDraftId = searchParams.get("draftId");
 
-  if (!categoria) {
+  console.log("categoria");
+  console.log(categoria);
+  console.log("nombre");
+  console.log(auditoriaNombre);
+  console.log("id del borrador");
+  console.log(paramDraftId);
+
+
+  if (!categoria && !searchParams.get("nombre")) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <button onClick={() => navigate('/')} className="btn btn-primary">Volver al Index</button>
       </div>
     );
   }
+
+  let cleanName = "";
+
+  if (auditoriaNombre) {
+    cleanName = auditoriaNombre
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  const shortId = Math.random().toString(36).substring(2, 7);
+
+// 3. Tu STORAGE_KEY final y profesional queda indestructible:
+
+// El ID se calcula una sola vez de forma estricta:
+  const auditId = useMemo(() => {
+    // 1. Si viene por URL (porque el usuario le dio a "Continuar"), respetamos ese ID exacto
+    if (paramDraftId) return paramDraftId;
+
+    // 2. Si es una auditoría totalmente nueva, generamos el ID único solo en este instante
+    const shortId = Math.random().toString(36).substring(2, 7);
+    const baseName = cleanName;
+    return `${cleanName}-${shortId}`;
+  }, [paramDraftId]);
+    
+  let UniqId = "";
+
+  if (paramDraftId) {
+    console.log("id de draf");
+    UniqId = paramDraftId;
+    console.log(UniqId);
+  }else{
+    console.log("nombre nuevo")
+    UniqId = `Borrador_${auditId}`;
+    console.log(UniqId);
+  }
+
+  const STORAGE_KEY = UniqId;
+  
+  console.log("Clave de almacenamiento local para esta auditoría:", STORAGE_KEY);
 
   const questionsMap = {
     "AuditV1": Q1, 
@@ -38,14 +96,84 @@ function Form() {
 
   const totalQuestions = questions.length;
 
+  const [currentStep, setCurrentStep] = useState(() => {
+  const savedAnswers = localStorage.getItem(STORAGE_KEY);
+  console.log("Verificando borrador local al iniciar el componente:", savedAnswers);
+  
+  if (!savedAnswers) {
+    console.log("No hay borrador local para cargar.");
+    return 0;
+  }
+
+  console.log("Cargando borrador local:", savedAnswers);
+  const parsedAnswers = JSON.parse(savedAnswers);
+  
+  // Extraemos únicamente el subobjeto 'answers' (o usamos 'parsed' directo si es formato antiguo)
+  const answersObj = parsedAnswers.answers;
+
+  console.log("indice preguntas");
+  console.log(answersObj);
+
+  const answeredIds = Object.keys(answersObj);
+  console.log("Preguntas respondidas previamente:", answeredIds);
+
+  if (answeredIds.length === 0) return 0;
+
+  // Buscamos el índice de la última pregunta que tenga una respuesta registrada
+  // Asumiendo que 'questions' es tu array con todas las preguntas
+  const lastAnsweredId = answeredIds[answeredIds.length - 1];
+  console.log("Última pregunta respondida ID:", lastAnsweredId);
+
+  const lastIndex = lastAnsweredId;
+  console.log("Última pregunta respondida encontrada en índice:", lastIndex);
+
+  const lastIndexNum = parseInt(lastIndex, 10);
+  console.log(typeof lastIndexNum, "Tipo de lastIndex:", lastIndexNum);
+
+  // Si encuentra la pregunta, avanzamos al paso siguiente (+1) para que continúe donde se quedó,
+  // o si prefieres justo en la última respondida, déjalo en 'lastIndex'.
+  // Por lo general, lo ideal es ir a la siguiente pregunta sin responder:
+  if (lastIndex !== -1 && lastIndex < questions.length - 1) {
+    console.log("Ultimo ID:", lastIndex, ", Última pregunta respondidaaa:", questions[lastIndex]);7
+    return lastIndexNum - 1;
+  }
+
+  console.log("No se encontró");
+  return lastIndexNum !== -1 ? lastIndexNum : 0;
+});
+
+
+
+useEffect(() => {
+  const savedAnswers = localStorage.getItem(STORAGE_KEY);
+  console.log("Verificando borrador local al cargar la app:", savedAnswers);
+  
+  if (savedAnswers) {
+    try {
+      const parsed = JSON.parse(savedAnswers);
+      
+      // Verificamos si existe 'answers' y si tiene contenido real dentro
+      const answersData = parsed.answers ? parsed.answers : parsed;
+      
+      if (answersData && Object.keys(answersData).length > 0) {
+        setShowResumeBanner(true);
+        
+        const timer = setTimeout(() => {
+          setShowResumeBanner(false);
+        }, 4000);
+        
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {
+      console.error("Error al parsear el borrador:", e);
+    }
+  }
+  }, []);
+
+
   // Estado para almacenar los archivos indexados por el ID de la pregunta
   const [uploadedFiles, setUploadedFiles] = useState({});
 
-
-
-
-
-  
 
   const handleFileChange = async (questionId, event) => {
   const filesSelected = Array.from(event.target.files);
@@ -83,9 +211,13 @@ function Form() {
       //   ...prevFiles,
       //   [questionId]: processedFiles // Guarda o actualiza los archivos para esta pregunta
       // }));
+      
+      let updatedFilesForQuestion = [];
+
       setUploadedFiles((prevFiles) => {
         // Obtenemos los archivos que ya existían para esta pregunta (si no hay, empezamos con un array vacío)
         const existingFiles = prevFiles[questionId] || [];
+        updatedFilesForQuestion = [...existingFiles, ...processedFiles];
         
         return {
           ...prevFiles,
@@ -93,19 +225,106 @@ function Form() {
           [questionId]: [...existingFiles, ...processedFiles]
         };
       });
+
+      // 3. ¡Nuevo! Guardamos de forma persistente en IndexedDB para que sobreviva al cierre de la PWA o app
+      try {
+        // Nota: Asegúrate de tener 'auditId' disponible en este scope (el ID que definimos antes)
+        console.log(`Guardando archivos en Dexie para auditoría ${STORAGE_KEY}, pregunta ${questionId}:`, updatedFilesForQuestion);
+        await saveImagesToDB(STORAGE_KEY, questionId, processedFiles);
+        
+        console.log(`Archivos guardados en Dexie para auditoría ${STORAGE_KEY}, pregunta ${questionId}`);
+      } catch (error) {
+        console.error("Error al guardar archivos en Dexie:", error);
+      }
     }
   };
 
 
+  useEffect(() => {
+  const loadStoredFiles = async () => {
+    try {
+      console.log("Buscando imágenes en IndexedDB para el STORAGE_KEY:", STORAGE_KEY);
+
+      // Consultamos directamente en tu tabla de Dexie filtrando por el auditId que equivale a tu STORAGE_KEY
+      const storedImages = await db.images
+        .where('auditId')
+        .equals(STORAGE_KEY)
+        .toArray();
+
+      console.log("Imágenes encontradas en IndexedDB:", storedImages);
+
+      if (storedImages && storedImages.length > 0) {
+        const restoredFiles = {};
+
+        // Agrupamos las imágenes por su questionId para reconstruir tu objeto 'uploadedFiles'
+        storedImages.forEach((imgRecord) => {
+          // Ajusta 'questionId' y 'fileData' según los nombres de las propiedades en tu base de datos
+          const { questionId, file } = imgRecord; 
+          
+          if (!restoredFiles[questionId]) {
+            restoredFiles[questionId] = [];
+          }
+          
+          restoredFiles[questionId].push(file);
+        });
+
+        // Actualizamos el estado con las fotos agrupadas por pregunta
+        setUploadedFiles(restoredFiles);
+        console.log("Archivos restaurados con éxito:", restoredFiles);
+      }
+    } catch (error) {
+      console.error("Error al cargar las imágenes desde IndexedDB:", error);
+    }
+  };
+
+  if (STORAGE_KEY) {
+    loadStoredFiles();
+  }
+}, [questions]);
+
+  // const [answers, setAnswers] = useState({}); // <--- ESTA ES LA QUE TE FALTA
+
+  const [answers, setAnswers] = useState(() => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    console.log("=== DEBUG LOCALSTORAGE ===");
+    console.log("Raw string guardado:", saved);
+    
+    if (!saved) return {};
+
+    const parsed = JSON.parse(saved);
+    console.log("Objeto parseado completo:", parsed);
+    
+    // Extraemos estrictamente solo las respuestas para depurar
+    const respuestasGuardadas = parsed.answers ? parsed.answers : parsed;
+    console.log("Respuestas extraídas para el estado:", respuestasGuardadas);
+    
+    return respuestasGuardadas;
+  } catch (error) {
+    console.error("Error al cargar el borrador local:", error);
+    return {};
+  }
+});
+
+  // 2. Sincronizamos automáticamente cada cambio de 'answers' con localStorage
+  useEffect(() => {
+    const draftData = {
+      updatedAt: new Date().toISOString(),
+      categoriaDraft: categoria,
+      answers: answers, 
+      toti: "ia"
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(draftData));
+    } catch (error) {
+      console.error("Error al guardar el borrador local:", error);
+    }
+  }, [answers]);
 
 
-
-
-
-
-  const [answers, setAnswers] = useState({}); // <--- ESTA ES LA QUE TE FALTA
   // Cálculo de progreso para DaisyUI (valor de 0 a 100)
   const progressValue = ((currentStep + 1) / totalQuestions) * 100;
+
 
   const handleAnswer = (option) => {
     // Actualizamos el JSON de respuestas. 
@@ -177,10 +396,28 @@ function Form() {
 
       // Si hay archivos, los pintamos en la hermosa tabla de la consola
       if (fileData.length > 0) {
+        console.log("Tipo de fileData:", typeof fileData);
         console.table(fileData);
       }
     }, [uploadedFiles]);
 
+
+  // 2. EFECTO CLAVE: Cada vez que cambie 'currentStep', buscamos si ya había una respuesta guardada
+  useEffect(() => {
+    const currentQuestionId = questions[currentStep]?.id;
+    const existingAnswer = answers[currentQuestionId];
+
+    if (existingAnswer) {
+      // Si ya habías respondido esta pregunta, la cargamos en la vista
+      // (Soportando tanto si guardas solo la opción como si guardas un objeto con respuesta/comentario)
+      setSelectedOption(typeof existingAnswer === 'object' ? existingAnswer.respuesta : existingAnswer);
+      setCommentText(typeof existingAnswer === 'object' ? existingAnswer.comentario || '' : '');
+    } else {
+      // Si es una pregunta nueva que no se ha respondido, limpiamos la vista
+      setSelectedOption(null);
+      setCommentText('');
+    }
+  }, [currentStep, answers]); // Se ejecuta si cambias de paso o si se actualizan las respuestas
 
   const { setGlobalFiles } = useAuditoria();
 
@@ -248,7 +485,25 @@ function Form() {
     
 
   return (
+
+    
+    
     <div className="min-h-screen bg-base-200 flex flex-col items-center p-4">
+
+      {showResumeBanner && (
+  <div className="max-w-md alert alert-info shadow-lg mb-4 flex justify-between items-center animate-fade-in">
+    <div>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current flex-shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <span>¡Hola! Hemos recuperado tu progreso anterior. Continuamos donde te quedaste.</span>
+    </div>
+    <button 
+      onClick={() => setShowResumeBanner(false)} 
+      className="btn btn-sm btn-ghost"
+    >
+      ✕
+    </button>
+  </div>
+)}
       
       {/* HEADER CON PROGRESO */}
       <div className="w-full max-w-md mt-0 mb-2">
@@ -286,6 +541,7 @@ function Form() {
               </h2>
               
               <div className="flex flex-col gap-3 mt-0">
+
                 {questions[currentStep].options.map((option, index) => (
                   <button
                     key={index}

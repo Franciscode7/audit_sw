@@ -15,7 +15,7 @@ export const downloadPDF = (element, auditData, type, auditorName) => {
   // 1. Clonamos el elemento para no afectar la vista del usuario
   const clonedElement = element.cloneNode(true);
   
- clonedElement.style.width = "750px";
+clonedElement.style.width = "750px";
 clonedElement.style.minWidth = "750px";  // Evita que colapse
 clonedElement.style.maxWidth = "750px";  // Evita que se estire
 clonedElement.style.margin = "0 auto";    // Centrado absoluto
@@ -59,4 +59,27 @@ clonedElement.style.display = "block";    // Asegura comportamiento de bloque li
 
   // 4. Ejecutar la conversión y descarga
   html2pdf().set(opt).from(clonedElement).save();
+};
+
+
+// En tu archivo de funciones o helpers (ej. utils.js o db.js)
+export const DeleteDraft = (selectedAuditId, setSavedAudits, setSelectedAuditId) => {
+  if (window.confirm("¿Estás seguro de eliminar este borrador de forma permanente?")) {
+    // 1. Borramos del localStorage
+    localStorage.removeItem(selectedAuditId);
+    
+    // 2. Actualizamos la lista local de borradores para que desaparezca del select
+    setSavedAudits(prev => prev.filter(audit => audit.id !== selectedAuditId));
+    
+    // 3. Limpiamos la selección actual
+    setSelectedAuditId("");
+    
+    console.log("Borrador eliminado con éxito.");
+  }
+};
+
+export const GoForm = (navigate, categoriaSeleccionada, currentDraftId) => {
+  navigate(
+    `formulario?categoria=${encodeURIComponent(categoriaSeleccionada)}&draftId=${encodeURIComponent(currentDraftId)}`
+  );
 };
