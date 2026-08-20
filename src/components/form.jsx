@@ -127,11 +127,10 @@ function Form() {
   const lastIndex = lastAnsweredId;
   console.log("Última pregunta respondida encontrada en índice:", lastIndex);
 
-  let lastIndexNumber = parseInt(lastIndex, 10);
-  console.log(typeof lastIndexNumber, "Tipo de lastIndex:", lastIndexNumber);
-
-  const lastIndexNum = lastIndexNumber - 1;
+  let lastIndexNum = parseInt(lastIndex, 10);
+  lastIndexNum = lastIndexNum - 1;
   console.log(typeof lastIndexNum, "Tipo de lastIndex:", lastIndexNum);
+  
 
   // Si encuentra la pregunta, avanzamos al paso siguiente (+1) para que continúe donde se quedó,
   // o si prefieres justo en la última respondida, déjalo en 'lastIndex'.
