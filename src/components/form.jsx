@@ -127,18 +127,23 @@ function Form() {
   const lastIndex = lastAnsweredId;
   console.log("Última pregunta respondida encontrada en índice:", lastIndex);
 
-  const lastIndexNum = parseInt(lastIndex, 10);
+  let lastIndexNumber = parseInt(lastIndex, 10);
+  console.log(typeof lastIndexNumber, "Tipo de lastIndex:", lastIndexNumber);
+
+  const lastIndexNum = lastIndexNumber - 1;
   console.log(typeof lastIndexNum, "Tipo de lastIndex:", lastIndexNum);
 
   // Si encuentra la pregunta, avanzamos al paso siguiente (+1) para que continúe donde se quedó,
   // o si prefieres justo en la última respondida, déjalo en 'lastIndex'.
   // Por lo general, lo ideal es ir a la siguiente pregunta sin responder:
   if (lastIndex !== -1 && lastIndex < questions.length - 1) {
+    lastIndexNum = lastIndexNum - 1;
     console.log("Ultimo ID:", lastIndex, ", Última pregunta respondidaaa:", questions[lastIndex]);7
-    return lastIndexNum - 1;
+    return lastIndexNum;
   }
 
   console.log("No se encontró");
+  
   return lastIndexNum !== -1 ? lastIndexNum : 0;
 });
 

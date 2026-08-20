@@ -62,6 +62,10 @@ clonedElement.style.display = "block";    // Asegura comportamiento de bloque li
 };
 
 
+
+
+
+
 // En tu archivo de funciones o helpers (ej. utils.js o db.js)
 export const DeleteDraft = (selectedAuditId, setSavedAudits, setSelectedAuditId) => {
   if (window.confirm("¿Estás seguro de eliminar este borrador de forma permanente?")) {

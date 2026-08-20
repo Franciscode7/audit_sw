@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import path from 'path'; // <-- 1. Importa path para resolver la ruta absoluta
 
 export default defineConfig({
+  // 2. Agrega la sección de resolución de alias
+  resolve: {
+    alias: {
+      html2canvas: path.resolve(__dirname, 'node_modules/html2canvas-pro'),
+    },
+  },
   plugins: [
     react(),
     VitePWA({

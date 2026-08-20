@@ -176,40 +176,40 @@ function Reports() {
         </table>
       </div> */}
 
-      <div ref={reportRef} className="bg-white p-10 text-black border border-gray-200">
+      <div ref={reportRef} className="bg-[#ffffff] p-10 text-black border border-[#e5e7eb]">
       {/* Encabezado */}
-      <h1 className="text-2xl text-[#000000] font-bold mb-6 pb-2 text-left border-b-2 border-gray-800">
+      <h1 className="text-2xl text-[#000000] font-bold mb-6 pb-2 text-left border-b-2 border-[#1f2937]">
         Reporte elaborado por: <p className='text-[#4682B4] inline'>{auditorName || "unmade"}</p>
       </h1>
 
       {/* Tabla construida con Tailwind puro */}
-      <div className="w-full overflow-hidden rounded-lg border border-gray-300">
+      <div className="w-full overflow-hidden rounded-lg border border-[#d1d5db]">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-gray-100 border-b border-gray-300">
-              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-16">ID</th>
-              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-32 text-center">Pregunta</th>
-              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-8 text-center">Respuesta</th>
-              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-32 text-center">Comentario</th>
-              <th className="px-4 py-3 text-sm font-bold text-gray-700 w-32 text-center">Foto</th>
+            <tr className="bg-[#f3f4f6] border-b border-[#d1d5db]">
+              <th className="px-4 py-3 text-sm font-bold text-[#374151] w-16">ID</th>
+              <th className="px-4 py-3 text-sm font-bold text-[#374151] w-32 text-center">Pregunta</th>
+              <th className="px-4 py-3 text-sm font-bold text-[#374151] w-8 text-center">Respuesta</th>
+              <th className="px-4 py-3 text-sm font-bold text-[#374151] w-32 text-center">Comentario</th>
+              <th className="px-4 py-3 text-sm font-bold text-[#374151] w-32 text-center">Foto</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-[#e5e7eb]">
             {questions.map((q) => (
               
               <tr key={q.id}>
-                <td className="px-4 py-3 text-sm text-gray-600">{q.id}</td>
-                <td className="px-4 py-3 text-sm text-gray-800 text-center font-medium">{q.text}</td>
+                <td className="px-4 py-3 text-sm text-[#4b5563]">{q.id}</td>
+                <td className="px-4 py-3 text-sm text-[#1f2937] text-center font-medium">{q.text}</td>
 
                 <td className="px-4 py-3 text-sm text-center">
                     {/* <span className="text">{auditData.respuestas[q.id]?.respuesta}</span> */}
                   <span 
                   className={`font-bold px-2 py-1 rounded ${
                     auditData.respuestas[q.id]?.respuesta === 'Sí'
-                    ? 'text-green-700' 
+                    ? 'text-[#15803d]' 
                     : auditData.respuestas[q.id]?.respuesta === 'Parcialmente'
-                    ? 'text-yellow-500' 
-                    : 'text-red-700'
+                    ? 'text-[#ca8a04]' 
+                    : 'text-[#b91c1c]'
                   }`}>
                     {auditData.respuestas[q.id]?.respuesta}
                   </span>
@@ -220,52 +220,22 @@ function Reports() {
                   <span className="font-bold px-2 py-1 rounded">{auditData.respuestas[q.id]?.comentario || "Sin comentario"}</span>
                 </td>
 
-                {/* <td className="px-4 py-3 text-sm text-center">
-                  
-                  {fileIds.map((id) => {
-                    const file = globalFiles[id];
-                    // Creamos la URL temporal para la etiqueta <img>
-
-                    const imagenUrl = URL.createObjectURL(file);
-
-                    return (
-                      <img 
-                        src={imagenUrl} 
-                        alt={`Evidencia ${id}`} 
-                        // Revocamos la URL de memoria cuando la imagen se desmonte para evitar fugas de memoria
-                        // onLoad={() => URL.revokeObjectURL(imagenUrl)}
-                      />
-                    );
-                  })}
-                 
-                </td> */}
-
                 <td className="px-4 py-3 text-sm text-center">
-                  {/* {globalFiles[q.id] ? (
-                    <div className="flex justify-center">
-                      <img 
-                        src={URL.createObjectURL(globalFiles[q.id])} 
-                        alt={`Evidencia ${q.id}`} 
-                        className="w-30 h-30 object-cover rounded shadow-sm border-gray-200"
-                      />
-                    </div>
-                  ) : (
-                    <span className="text-gray-400 italic text-xs">Sin imagen</span>
-                  )} */}
+                 
                   {globalFiles[q.id] && globalFiles[q.id].length > 0 ? (
-  /* Contenedor tipo grid o flex para alinear múltiples imágenes */
+            /* Contenedor tipo grid o flex para alinear múltiples imágenes */
                     <div className="flex flex-wrap justify-center gap-2">
                       {globalFiles[q.id].map((file, index) => (
                         <img 
                           key={`${q.id}-img-${index}`}
                           src={URL.createObjectURL(file)} 
                           alt={`Evidencia ${q.id} - Imagen ${index + 1}`} 
-                          className="w-30 h-30 object-cover rounded shadow-sm border border-gray-200" 
+                          className="w-30 h-30 object-cover rounded shadow-sm border border-[#e5e7eb]" 
                         />
                       ))}
                     </div>
                   ) : (
-                    <span className="text-gray-400 italic text-xs">Sin imagen</span>
+                    <span className="text-[#9ca3af] italic text-xs">Sin imagen</span>
                   )}
                 </td>
 
@@ -277,7 +247,7 @@ function Reports() {
       </div>
 
       {/* Pie de página del PDF */}
-      <div className="mt-8 pt-4 border-t border-gray-100 text-[10px] text-gray-400 flex justify-between">
+      <div className="mt-8 pt-4 border-t border-[#f3f4f6] text-[10px] text-[#9ca3af] flex justify-between">
         <p>Fecha de generación: {new Date(auditData.fecha).toLocaleString()}</p>
         <p>Firma: ___________________________</p>
       </div>
